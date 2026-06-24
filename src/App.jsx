@@ -46,6 +46,11 @@ export default function App() {
     return saved ? JSON.parse(saved) : MOCK_BUDGETS;
   });
 
+  const [initialBalance, setInitialBalance] = useState(() => {
+    const saved = localStorage.getItem('wealthflow_initial_balance');
+    return saved ? parseFloat(saved) : 5000; // default ₹5,000 starting cash
+  });
+
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('wealthflow_theme');
     return saved || 'dark'; // Dark theme first
@@ -62,6 +67,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('wealthflow_budgets', JSON.stringify(budgets));
   }, [budgets]);
+
+  useEffect(() => {
+    localStorage.setItem('wealthflow_initial_balance', initialBalance.toString());
+  }, [initialBalance]);
 
   useEffect(() => {
     localStorage.setItem('wealthflow_theme', theme);
@@ -167,7 +176,12 @@ export default function App() {
       />
 
       {/* Overview stats layout */}
-      <SummaryCards transactions={transactions} budgets={budgets} />
+      <SummaryCards 
+        transactions={transactions} 
+        budgets={budgets} 
+        initialBalance={initialBalance}
+        onSaveInitialBalance={setInitialBalance}
+      />
 
       {/* Main dashboard grid */}
       <div className="dashboard-grid">

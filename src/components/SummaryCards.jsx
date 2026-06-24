@@ -1,14 +1,17 @@
-import React from 'react';
-import { DollarSign, ArrowUpRight, ArrowDownLeft, Activity } from 'lucide-react';
+import React, { useState } from 'react';
+import { IndianRupee, ArrowUpRight, ArrowDownLeft, Activity, Edit3, Check, X } from 'lucide-react';
 
-export default function SummaryCards({ transactions = [], budgets = [] }) {
+export default function SummaryCards({ transactions = [], budgets = [], initialBalance = 0, onSaveInitialBalance }) {
+  const [isEditingBalance, setIsEditingBalance] = useState(false);
+  const [editBalanceVal, setEditBalanceVal] = useState('');
+
   // Calculations
   const incomeTransactions = transactions.filter(t => t.type === 'income');
   const expenseTransactions = transactions.filter(t => t.type === 'expense');
 
   const totalIncome = incomeTransactions.reduce((acc, curr) => acc + parseFloat(curr.amount || 0), 0);
   const totalExpenses = expenseTransactions.reduce((acc, curr) => acc + parseFloat(curr.amount || 0), 0);
-  const netBalance = totalIncome - totalExpenses;
+  const netBalance = initialBalance + totalIncome - totalExpenses;
 
   const totalBudgetLimit = budgets.reduce((acc, curr) => acc + parseFloat(curr.limit || 0), 0);
 
@@ -24,6 +27,25 @@ export default function SummaryCards({ transactions = [], budgets = [] }) {
       currency: 'INR',
       maximumFractionDigits: 0
     }).format(val);
+  };
+
+  const handleStartEdit = () => {
+    setEditBalanceVal(initialBalance.toString());
+    setIsEditingBalance(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingBalance(false);
+  };
+
+  const handleSaveEdit = () => {
+    const val = parseFloat(editBalanceVal);
+    if (isNaN(val) || val < 0) {
+      alert('Please enter a valid positive number for your starting net worth.');
+      return;
+    }
+    onSaveInitialBalance(val);
+    setIsEditingBalance(false);
   };
 
   // Class for balance card dynamic styling
@@ -43,16 +65,42 @@ export default function SummaryCards({ transactions = [], budgets = [] }) {
       {/* Total Balance Card */}
       <div className={`glass-card summary-card ${balanceGlowClass}`}>
         <div className="card-header">
-          <span className="card-title">Net Balance</span>
+          <span className="card-title">Net Balance / Net Worth</span>
           <div className={`icon-container ${netBalance >= 0 ? 'bg-success-glow' : 'bg-danger-glow'}`}>
-            <DollarSign size={20} className={netBalance >= 0 ? 'text-success' : 'text-danger'} />
+            <IndianRupee size={20} className={netBalance >= 0 ? 'text-success' : 'text-danger'} />
           </div>
         </div>
         <div className="card-body">
           <h2 className={`card-value ${balanceColorClass}`}>{formatCurrency(netBalance)}</h2>
-          <p className="card-meta">
-            {netBalance >= 0 ? 'Positive cash flow' : 'Deficit cash flow'}
-          </p>
+          
+          {isEditingBalance ? (
+            <div className="balance-edit-form animate-fade-in">
+              <span className="rupee-prefix">₹</span>
+              <input
+                type="number"
+                className="form-input edit-balance-input"
+                value={editBalanceVal}
+                onChange={(e) => setEditBalanceVal(e.target.value)}
+                placeholder="Starting Cash"
+                autoFocus
+              />
+              <button className="btn btn-secondary btn-icon-only edit-action-btn check-btn" onClick={handleSaveEdit}>
+                <Check size={12} className="text-success" />
+              </button>
+              <button className="btn btn-secondary btn-icon-only edit-action-btn close-btn" onClick={handleCancelEdit}>
+                <X size={12} className="text-danger" />
+              </button>
+            </div>
+          ) : (
+            <div className="starting-balance-display">
+              <span className="card-meta">
+                Starting: <strong>{formatCurrency(initialBalance)}</strong>
+              </span>
+              <button className="inline-edit-balance-btn" onClick={handleStartEdit} title="Modify Starting Cash">
+                <Edit3 size={11} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -211,6 +259,7 @@ export default function SummaryCards({ transactions = [], budgets = [] }) {
         .card-body {
           display: flex;
           flex-direction: column;
+          gap: 0.25rem;
         }
 
         .card-value {
@@ -224,8 +273,63 @@ export default function SummaryCards({ transactions = [], budgets = [] }) {
         .card-meta {
           font-size: 0.75rem;
           color: var(--text-muted);
-          margin-top: 0.25rem;
           font-weight: 500;
+        }
+
+        .starting-balance-display {
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
+        }
+
+        .inline-edit-balance-btn {
+          background: none;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          padding: 0.125rem;
+          border-radius: 4px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: all var(--transition-fast);
+        }
+
+        .inline-edit-balance-btn:hover {
+          color: var(--color-primary);
+          background: var(--border-color);
+        }
+
+        .balance-edit-form {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          height: 1.75rem;
+        }
+
+        .rupee-prefix {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--text-secondary);
+        }
+
+        .edit-balance-input {
+          width: 90px;
+          padding: 0.25rem 0.5rem;
+          font-size: 0.8rem;
+          background: rgba(0, 0, 0, 0.25);
+          height: 1.75rem;
+        }
+
+        [data-theme="light"] .edit-balance-input {
+          background: #ffffff;
+        }
+
+        .edit-action-btn {
+          width: 1.75rem;
+          height: 1.75rem;
+          min-width: 1.75rem;
+          border-radius: 4px;
         }
 
         .budget-health-body {
